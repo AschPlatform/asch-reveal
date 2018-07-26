@@ -1,22 +1,59 @@
 const Koa = require('koa')
 const render = require('koa-ejs')
 const static = require('koa-static')
+const fs = require('fs')
+const path = require('path')
 
-const app = new Koa();
+const EXT = '.html'
 
-render(app, {
-  root: process.cwd(),
-  viewExt: 'html',
-  cache: false,
-  debug: true,
-})
+function getSlides(dir) {
+  return new Promise((resolve, reject) => {
+    fs.readdir(dir, (err, files) => {
+      if (err) return reject(err)
+      const slides = []
+      for (const f of files) {
+        const ext = path.extname(f)
+        const basename = path.basename(f, EXT)
+        if (ext === EXT && basename !== 'index') {
+          slides.push(basename)
+        }
+      }
+      return resolve(slides)
+    })
+  })
+}
 
-app.use(static(root))
+function main() {
+  const app = new Koa()
 
-app.use(async function (ctx) {
-  await ctx.render(`${ctx.req.url.slice(1)}`)
-});
+  const root = process.cwd()
+  render(app, {
+    root,
+    layout: false,
+    viewExt: 'html',
+    cache: false,
+  })
 
-app.listen(3000, () => {
-  console.log('Server started successfully!')
-})
+  app.use(static(__dirname))
+
+  app.use(async ctx => {
+    const slide = ctx.req.url.slice(1)
+    if (!slide) {
+      const slides = await getSlides(root)
+      await ctx.render('index', { slides })
+    } else {
+      await ctx.render(slide)
+    }
+  });
+
+  const port = Number(process.argv[2]) || 3000
+  app.listen(port, (err) => {
+    if (err) {
+      console.error(err)
+      return
+    }
+    console.log(`Serving!\r\nhttp://localhost:${port}`)
+  })
+}
+
+main()
