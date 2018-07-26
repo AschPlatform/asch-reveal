@@ -10,6 +10,9 @@
     "start": "grunt serve",
     "build": "grunt"
   },
+  "bin": {
+    "asch-reveal": "./bin/asch-reveal"
+  },
   "author": {
     "name": "Hakim El Hattab",
     "email": "hakim.elhattab@gmail.com",
